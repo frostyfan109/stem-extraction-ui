@@ -1,0 +1,16 @@
+---
+separators:
+  demucs:
+    name: "Demucs"
+    url: "https://github.com/facebookresearch/demucs"
+    enabled: true
+    exe: null # specify executable location if not in path
+    disabled_args: []
+    schema: null # auto-generated
+  spleeter:
+    name: "Spleeter"
+    url: "https://github.com/deezer/spleeter"
+    enabled: true
+    exe: null
+    disabled_args: []
+    schema: null

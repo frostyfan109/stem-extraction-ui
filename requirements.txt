@@ -1,0 +1,5 @@
+flask
+flask-restx
+flask-cors
+flask-caching
+pyyaml
