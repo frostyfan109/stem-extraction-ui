@@ -1,0 +1,18 @@
+.Header {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    background-color: #fff !important;
+}
+.left-header {
+    width: 100%;
+}
+.left-header > *:last-child {
+    flex-grow: 1;
+}
+.login-modal .ant-modal-close {
+    /* display: none; */
+}
+.login-modal .ant-modal-footer {
+    display: none;
+}

@@ -1,0 +1,13 @@
+{
+    "extends": "react-app",
+    "rules": {
+        "semi": [2, "always"],
+        "no-unreachable": 1,
+        "no-restricted-syntax": [
+            "error",
+            "WithStatement",
+            "BinaryExpression[operator='in']", // e.g. for (let x in obj) { ... }
+            "ExportDefaultDeclaration", // e.g. import X from 'Y';
+        ]
+    }
+}
