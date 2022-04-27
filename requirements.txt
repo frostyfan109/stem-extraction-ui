@@ -1,5 +1,6 @@
 flask
-flask-restx
+flask-restx==0.4.0
 flask-cors
 flask-caching
 pyyaml
+markupsafe==2.0.1
