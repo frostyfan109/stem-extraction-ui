@@ -65,6 +65,13 @@ export const PasswordInput = ({ name, overrides, errors=[] }: InputProps) => (
                 required: true,
                 message: "Please enter your password"
             },
+            ({ getFieldValue }) => ({
+                validator(_, value) {
+                    const error = errors.find((err) => err.fieldName === name);
+                    if (error) return Promise.reject(error.message);
+                    else return Promise.resolve();
+                }
+            }),
             ...(overrides.rules || [])
         ]}
     />
@@ -88,6 +95,13 @@ export const PasswordConfirmInput = ({ name, passwordName, overrides, errors=[] 
                 validator(_, value) {
                     if (!value || getFieldValue(passwordName) === value) return Promise.resolve();
                     else return Promise.reject(new Error("Your passwords do not match."));
+                }
+            }),
+            ({ getFieldValue }) => ({
+                validator(_, value) {
+                    const error = errors.find((err) => err.fieldName === name);
+                    if (error) return Promise.reject(error.message);
+                    else return Promise.resolve();
                 }
             }),
             ...(overrides.rules || [])
@@ -114,6 +128,13 @@ export const EmailInput = ({ name, overrides, errors=[] }: InputProps) => (
                 required: true,
                 message: "Please enter your email"
             },
+            ({ getFieldValue }) => ({
+                validator(_, value) {
+                    const error = errors.find((err) => err.fieldName === name);
+                    if (error) return Promise.reject(error.message);
+                    else return Promise.resolve();
+                }
+            }),
             ...(overrides.rules || [])
         ]}
     />

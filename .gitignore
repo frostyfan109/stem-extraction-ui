@@ -35,3 +35,7 @@ MANIFEST
 venv/
 .venv
 .env
+
+# DB
+app.db
+app.db.bak*

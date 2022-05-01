@@ -10,4 +10,5 @@
 .ant-layout-content {
   padding: 2rem;
   height: 100%;
+  overflow-y: auto;
 }

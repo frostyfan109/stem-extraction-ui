@@ -1,0 +1,104 @@
+---
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+properties:
+  track:
+    positional: true
+    description: Audio to separate
+    hidden: true
+  name:
+    arg: "-n"
+    description: Pretrained model to use
+    type: string
+    enum:
+    - mdx
+    - mdx_q
+    - mdx_extra
+    - mdx_extra_q
+    - SIG
+    default: mdx
+  device:
+    arg: "-d"
+    description: Device to use
+    type: string
+    enum:
+    - cuda
+    - cpu
+    default: cpu
+  shifts:
+    arg: "--shifts"
+    description: Number of random shifts for equivariant stabilization. Higher improves quality
+    type: integer
+    minimum: 1
+    maximum: 10
+    default: 5
+  overlap:
+    arg: "--overlap"
+    description: Controls the percentage of overlap between prediction windows (10s)
+    type: number
+    minimum: 0
+    maximum: 1
+    default: .25
+  jobs:
+    arg: "-j"
+    description: Number of jobs to run. Higher improves speed
+    type: integer
+    minimum: 1
+    maximum: 4
+    default: 1
+  two_stems:
+    arg: "--two-stems"
+    description: Separate the track into just vocals and instrumental
+    type: boolean
+    default: true
+  output_format:
+    hook:
+    - value: Output as mp3 (128kbps)
+      mapping:
+        mp3: true
+        mp3_bitrate: 128
+      delete_self: true
+    - value: Output as mp3 (192kbps)
+      mapping:
+        mp3: true
+        mp3_bitrate: 192
+      delete_self: true
+    - value: Output as mp3 (256kbps)
+      mapping:
+        mp3: true
+        mp3_bitrate: 256
+      delete_self: true
+    - value: Output as mp3 (320kbps)
+      mapping:
+        mp3: true
+        mp3_bitrate: 320
+      delete_self: true
+    - value: Output as wav
+      mapping:
+        mp3: false
+      delete_self: true
+    description: Audio output type
+    type: string
+    enum:
+    - Output as mp3 (128kbps)
+    - Output as mp3 (192kbps)
+    - Output as mp3 (256kbps)
+    - Output as mp3 (320kbps)
+    - Output as wav
+    default: Output as wav
+  mp3:
+    arg: "--mp3"
+    description: Automatically convert stems from wav to mp3
+    hidden: true
+    type: boolean
+    default: true
+  mp3_bitrate:
+    arg: "--mp3-bitrate"
+    description: Bitrate of converted mp3 files
+    hidden: true
+    type: integer
+    enum:
+    - 64
+    - 128
+    - 192
+    - 320

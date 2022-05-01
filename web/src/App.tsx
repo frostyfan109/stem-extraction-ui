@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react';
 import { Divider, Layout, Space, Spin, Typography } from 'antd';
-import { matchPath, Route, Switch, useHistory, useLocation } from 'react-router-dom';
+import { matchPath, Route, RouteComponentProps, Switch, useHistory, useLocation } from 'react-router-dom';
 import { SourceSeparationView, Error404View, LoginView, LOGIN, SIGNUP, HistoryView } from './views';
 import { useApi, useDest, useError } from './contexts';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
@@ -21,11 +21,13 @@ export const App = () => {
   const location = useLocation();
   const api = useApi();
   const dest = useDest()!;
-  const { handleError, handleApiError } = useError();
+  const { handleError } = useError();
   const setAppConfig = useSetRecoilState(appConfigState);
   const setEnvironment = useSetRecoilState(environmentState);
   const setLoggedIn = useSetRecoilState(loggedInState);
+  const appConfig  = useRecoilValue(appConfigState);
   const appLoading = useRecoilValue(appLoadingState);
+
 
   const protectedRoutes = [
     { exact: true, path: "/history", component: HistoryView }
@@ -38,12 +40,10 @@ export const App = () => {
         try {
           const { data: appConfig } = await api.getAppConfig();
           setAppConfig(appConfig);
-        } catch (error: any) {
-          handleApiError({ error });
-        }
+        } catch (error: any) {}
       })();
     }
-  }, [api]);
+  }, [api, setAppConfig]);
 
   useEffect(() => {
     (async () => {
@@ -108,6 +108,13 @@ export const App = () => {
     }
   };
 
+  const sourceSeparationView = (activeSeparator: string, props: RouteComponentProps) => (
+    <SourceSeparationView setActiveSeparator={(key) => {
+      if (key === appConfig!.default_separator) history.push("/");
+      else history.push(`/${key}`);
+    }} activeSeparatorKey={activeSeparator} {...props}/>
+  );
+
   const isPageLogin = location.pathname === "/signup" || location.pathname === "/login";
   return (
     <Layout className="layout">
@@ -119,7 +126,12 @@ export const App = () => {
           </div>
         ) : (
           <Switch>
-            <Route exact path="/" component={SourceSeparationView}/>
+            <Route exact path="/" render={(props) => sourceSeparationView(appConfig!.default_separator, props)}/>
+            {
+              appConfig!.separator_config.map((separator) => (
+                <Route exact key={separator.key} path={`/${separator.key}`} render={(props) => sourceSeparationView(separator.key, props)}/>
+              ))
+            }
             <Route exact path="/login" render={(props) => (
               <LoginView type={LOGIN} typeChanged={() => history.push({
                 pathname: "/signup",
@@ -133,7 +145,7 @@ export const App = () => {
               })} onCompleted={loginComplete} asComponent={false}/>
             )}/>
             {protectedRoutes.map((route) => (
-              <ProtectedRoute {...route}/>
+              <ProtectedRoute key={route.path} {...route}/>
             ))}
             <Route path="*" component={Error404View}/>
           </Switch>

@@ -4,7 +4,7 @@ import { AppleFilled, GoogleCircleFilled, NodeExpandOutlined } from "@ant-design
 import { CSSProperties, Fragment, useEffect, useRef, useState } from "react";
 import { EmailInput, FormError, PasswordConfirmInput, PasswordInput, UsernameInput } from "./form-inputs";
 import classNames from "classnames";
-import { useSetRecoilState } from "recoil";
+import { useRecoilValue, useSetRecoilState } from "recoil";
 import { loggedInState } from "../../recoil/state/login";
 import { useApi, useError } from '../../contexts';
 import "./login.css";
@@ -13,8 +13,9 @@ import { APIError } from "../../api";
 import { ProFormFieldItemProps } from "@ant-design/pro-form/lib/interface";
 import { ValidatorRule } from "rc-field-form/lib/interface";
 import { useForm } from "antd/lib/form/Form";
-import { Link } from "react-router-dom";
+import { Link, Redirect } from "react-router-dom";
 import { FormWrapper } from "./form-wrapper";
+import { appConfigState } from "../../recoil/state/app-config";
 
 const { Text } = Typography;
 
@@ -44,10 +45,17 @@ export const LoginView = ({ type, asComponent, typeChanged, onCompleted, remembe
     const api = useApi();
     const { handleApiError } = useError();
     const [form] = useForm();
+    const { login_features: {
+        login_enabled: loginEnabled,
+        google_login: googleEnabled,
+        apple_login: appleEnabled
+    } } = useRecoilValue(appConfigState)!;
     const setLoggedIn = useSetRecoilState(loggedInState);
     const [errors, setErrors] = useState<FormError[]>([]);
     const [revalidateForm, setRevalidateForm] = useState<boolean>(false);
     const [currentlyValidating, setCurrentlyValidating] = useState<boolean>(false);
+
+    const noExtraOptions = !googleEnabled && !appleEnabled;
 
     useEffect(() => {
         setErrors([]);
@@ -85,7 +93,7 @@ export const LoginView = ({ type, asComponent, typeChanged, onCompleted, remembe
                     if (error instanceof APIError && error.response.status_code === 401) {
                         addError(error.response.data as FormError);
                         setRevalidateForm(true);
-                    } else handleApiError({ error });
+                    }
                 }
             } catch (e) {
                 // Front end validation failed.
@@ -107,7 +115,7 @@ export const LoginView = ({ type, asComponent, typeChanged, onCompleted, remembe
                     );
                     form.submit();
                 } catch (error: any) {
-                    if (error instanceof APIError && error.response.status_code === 401) {
+                    if (error instanceof APIError && error.response.status_code === 400) {
                         addError(error.response.data as FormError);
                         setRevalidateForm(true);
                     } else handleApiError({ error });
@@ -163,15 +171,15 @@ export const LoginView = ({ type, asComponent, typeChanged, onCompleted, remembe
                     // backgroundImageUrl="/background.png"
                     logo={<NodeExpandOutlined/>}
                     actions={
-                        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", flexDirection: "column" }}>
+                        <div style={{ display: noExtraOptions ? "none" : "flex", justifyContent: "center", alignItems: "center", flexDirection: "column" }}>
                             <Divider plain>
                                 <Text type="secondary" style={{ color: "#ccc", fontWeight: "normal", fontSize: 14 }}>
                                     More options
                                 </Text>
                             </Divider>
                             <Space>
-                                <GoogleCircleFilled style={{... iconStyles, color: "#1677FF" }}/>
-                                <AppleFilled style={{... iconStyles, color: "#333333" }}/>
+                                {googleEnabled && <GoogleCircleFilled style={{... iconStyles, color: "#1677FF" }}/>}
+                                {appleEnabled && <AppleFilled style={{... iconStyles, color: "#333333" }}/>}
                             </Space>
                         </div>
                     }
@@ -202,10 +210,10 @@ export const LoginView = ({ type, asComponent, typeChanged, onCompleted, remembe
                             </Fragment>
                         )
                     }
-                    <div style={{ marginBottom: "24px" }}>
-                        <ProFormCheckbox noStyle name="remember_me">
+                    <div style={{ marginBottom: "24px", display: "flex", justifyContent: "flex-end" }}>
+                        {/* <ProFormCheckbox noStyle name="remember_me">
                             Remember me
-                        </ProFormCheckbox>
+                        </ProFormCheckbox> */}
                         {type === LOGIN && (
                             <Link to="/forgot_password" onClick={rememberMeClicked} style={{ float: "right" }}>Forgot password?</Link>
                         )}

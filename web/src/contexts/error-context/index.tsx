@@ -49,96 +49,99 @@ export const ErrorContext = createContext<ErrorHandler>({} as ErrorHandler);
 
 export const ErrorProvider = ({ children }: any) => {
     const [errorModals, setErrorModals] = useState<ModalRef[]>([]);
-
-    const handleError = ({
-        errorName,
-        errorDescription,
-        errorInfo,
-        advancedErrorInfo,
-        traceback=true,
-        severity=ErrorSeverity.ERROR,
-        extra={}
-    } : HandleErrorOptions) => {
-        const title = <ErrorTitle name={errorName} description={errorDescription}/>;
-        const content = <ErrorContent info={errorInfo} advanced={advancedErrorInfo} traceback={traceback}/>;
-        let func;
-        switch (severity) {
-            case ErrorSeverity.ERROR:
-                func = Modal.error;
-                break;
-            case ErrorSeverity.WARNING:
-                func = Modal.warning;
-                break;
-            default:
-                func = Modal.error;
-                break;
-        }
-        const modal = func({
-            title,
-            content,
-            width: 500,
-            okText: "OK",
-            ...extra
-        });
-        setErrorModals([...errorModals, modal]);
-    };
-    const handleWarning = (options: HandleWarningOptions) => {
-        return handleError({
-            severity: ErrorSeverity.WARNING,
-            ...options
-        });
-    };
-    // As in an error that is not otherwise handled or is unknown as to why it occured.
-    // Log the error and auto-generate any unprovided handleError args.
-    const handleUncaughtError = ({error, errorName, errorInfo, advancedErrorInfo, severity=ErrorSeverity.ERROR, ...other }: HandleUncaughtErrorOptions) => {
-        if (severity === ErrorSeverity.ERROR) console.error(error);
-        return handleError({
-            errorName: errorName || "Something went wrong.",
-            errorInfo: errorInfo || error.message,
-            advancedErrorInfo: advancedErrorInfo || error.stack,
-            ...other
-        });
-    };
-    const handleApiError = ({ error, severity=ErrorSeverity.ERROR, ...other }: HandleUncaughtAPIErrorOptions) => {
-        if (error instanceof APIError) {
-            const { config, response } = error.axiosError;
-            const apiResponse = error.response;
-            let name, message, traceback;
-            if (error instanceof APIRequestError) {
-                // The request failed to connect to the server (e.g. connection was refused, reset, etc.)
-                name = "Network error";
-                message = "Could not establish a connection to the service.";
-                traceback = new Error().stack;
-            } else {
-                // The request was successful but the server sent returned a bad status code.
-                let statusText = response!.statusText.toLowerCase();
-                statusText = statusText[0].toUpperCase() + statusText.slice(1);
-                
-                name = `${response!.status} ${statusText}`;
-                message = apiResponse.message;
-                traceback = apiResponse.error_info?.traceback || new Error().stack;
+    const [context, setContext] = useState<ErrorHandler>({} as ErrorHandler);
+    useEffect(() => {
+        const handleError = ({
+            errorName,
+            errorDescription,
+            errorInfo,
+            advancedErrorInfo,
+            traceback=true,
+            severity=ErrorSeverity.ERROR,
+            extra={}
+        } : HandleErrorOptions) => {
+            const title = <ErrorTitle name={errorName} description={errorDescription}/>;
+            const content = <ErrorContent info={errorInfo} advanced={advancedErrorInfo} traceback={traceback}/>;
+            let func;
+            switch (severity) {
+                case ErrorSeverity.ERROR:
+                    func = Modal.error;
+                    break;
+                case ErrorSeverity.WARNING:
+                    func = Modal.warning;
+                    break;
+                default:
+                    func = Modal.error;
+                    break;
             }
+            const modal = func({
+                title,
+                content,
+                width: 500,
+                okText: "OK",
+                ...extra
+            });
+            setErrorModals([...errorModals, modal]);
+        };
+        const handleWarning = (options: HandleWarningOptions) => {
+            return handleError({
+                severity: ErrorSeverity.WARNING,
+                ...options
+            });
+        };
+        // As in an error that is not otherwise handled or is unknown as to why it occured.
+        // Log the error and auto-generate any unprovided handleError args.
+        const handleUncaughtError = ({error, errorName, errorInfo, advancedErrorInfo, severity=ErrorSeverity.ERROR, ...other }: HandleUncaughtErrorOptions) => {
             if (severity === ErrorSeverity.ERROR) console.error(error);
             return handleError({
-                errorName: name,
-                errorDescription: `Failed to ${config.method?.toUpperCase()} ${config.url}.`,
-                errorInfo: message,
-                advancedErrorInfo: traceback,
-                traceback: true
+                errorName: errorName || "Something went wrong.",
+                errorInfo: errorInfo || error.message,
+                advancedErrorInfo: advancedErrorInfo || error.stack,
+                ...other
             });
-        } else {
-            // Problem with actual code, not the server.
-            return handleUncaughtError({ error, ...other });
-        }
-    };
-
-    return (
-        <ErrorContext.Provider value={{
+        };
+        const handleApiError = ({ error, severity=ErrorSeverity.ERROR, ...other }: HandleUncaughtAPIErrorOptions) => {
+            if (error instanceof APIError) {
+                const { config, response } = error.axiosError;
+                const apiResponse = error.response;
+                let name, message, traceback;
+                if (error instanceof APIRequestError) {
+                    // The request failed to connect to the server (e.g. connection was refused, reset, etc.)
+                    name = "Network error";
+                    message = "Could not establish a connection to the service.";
+                    traceback = new Error().stack;
+                } else {
+                    // The request was successful but the server sent returned a bad status code.
+                    let statusText = response!.statusText.toLowerCase();
+                    statusText = statusText[0].toUpperCase() + statusText.slice(1);
+                    
+                    name = `${response!.status} ${statusText}`;
+                    message = apiResponse.message;
+                    traceback = apiResponse.error_info?.traceback || new Error().stack;
+                }
+                if (severity === ErrorSeverity.ERROR) console.error(error);
+                return handleError({
+                    errorName: name,
+                    errorDescription: `Failed to ${config.method?.toUpperCase()} ${config.url}.`,
+                    errorInfo: message,
+                    advancedErrorInfo: traceback,
+                    traceback: true
+                });
+            } else {
+                // Problem with actual code, not the server.
+                return handleUncaughtError({ error, ...other });
+            }
+        };
+        setContext({
             handleError,
             handleWarning,
             handleUncaughtError,
             handleApiError
-        }}>
+        });
+    }, []);
+
+    return (
+        <ErrorContext.Provider value={context}>
             {children}
         </ErrorContext.Provider>
     );

@@ -4,6 +4,7 @@ import { Fragment, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { useApi, useDest } from "../../contexts";
+import { appConfigState } from "../../recoil/state/app-config";
 import { environmentState, SHOW_PAGE } from "../../recoil/state/environment";
 import { loggedInState } from "../../recoil/state/login";
 import { LoginView, LOGIN, SIGNUP, LoginType } from "../../views";
@@ -20,6 +21,15 @@ export const Header = ({ onLogout }: { onLogout: () => void }) => {
     const api = useApi();
     const loggedIn = useRecoilValue(loggedInState);
     const environment = useRecoilValue(environmentState)!;
+    const {
+        login_features: {
+            login_enabled: loginEnabled
+        },
+        separator_config: separatorConfig
+    } = useRecoilValue(appConfigState) || {
+        login_features: { login_enabled: false },
+        separator_config: []
+    };
     const [loginModalVisible, setLoginModalVisible] = useState(false);
     const [loginModalType, setLoginModalType] = useState<LoginType>(LOGIN);
 
@@ -36,6 +46,8 @@ export const Header = ({ onLogout }: { onLogout: () => void }) => {
     const handleLogout = () => {
         onLogout();
     };
+
+    const activeKey = separatorConfig.map((separator) => "/" + separator.key).includes(location.pathname) ? "/" : location.pathname;
     return (
         <Fragment>
         <AntHeader className="Header">
@@ -46,8 +58,8 @@ export const Header = ({ onLogout }: { onLogout: () => void }) => {
                         <Title level={3} style={{ margin: 0 }}>Stem Extractor</Title>
                     </Space>
                 </Link>
-                <Menu theme="light" mode="horizontal" selectedKeys={[location.pathname]}>
-                    <Menu.Item key="/"><Link to="/">Home</Link></Menu.Item>
+                <Menu theme="light" mode="horizontal" selectedKeys={[activeKey]}>
+                    <Menu.Item key="/"><Link to="/">Separate</Link></Menu.Item>
                     {loggedIn && (
                         <Fragment>
                         <Menu.Item key="/history"><Link to="/history">Saved</Link></Menu.Item>
@@ -60,11 +72,13 @@ export const Header = ({ onLogout }: { onLogout: () => void }) => {
                 loggedIn ? (
                     <Button type="default" onClick={handleLogout}>Logout</Button>
                 ) : (
-                    <Fragment>
-                        <Button type="text" onClick={(e) => login(e, LOGIN)} href="/login">Sign in</Button>
-                        <Button type="ghost" onClick={(e) => login(e, SIGNUP)} href="/signup">Sign up</Button>
-                    </Fragment>
+                    loginEnabled && (
+                        <Fragment>
+                            <Button type="text" onClick={(e) => login(e, LOGIN)} href="/login">Sign in</Button>
+                            <Button type="ghost" onClick={(e) => login(e, SIGNUP)} href="/signup">Sign up</Button>
+                        </Fragment>
                     )
+                )
                 }
             </Space>
         </AntHeader>
