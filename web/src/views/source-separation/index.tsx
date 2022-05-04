@@ -6,7 +6,7 @@ import { useRecoilValue } from 'recoil';
 import { appConfigState } from '../../recoil/state/app-config';
 import './source-separation.css';
 import { SeparatorConfig, SpecConfig } from '../../api';
-import { Fragment, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -23,6 +23,15 @@ export const SourceSeparationView = ({ activeSeparatorKey, setActiveSeparator=()
     const activeSeparator = separatorConfig.find((separator) => separator.key === activeSeparatorKey);
 
     const sortOptions = separatorConfig[0].specs;
+
+    const sortedSeparators = useMemo(() => [...separatorConfig].sort((a, b) => {
+        const getScore = (x: SeparatorConfig) => {
+            const [, spec] = Object.entries(x.specs).find(([key, spec]) => key === currentSort)!;
+            return spec.score;
+        };
+        return getScore(b) - getScore(a);
+    }), [separatorConfig, currentSort]);
+
     if (activeSeparator) return (
         <Fragment>
         <Breadcrumb>
@@ -48,16 +57,10 @@ export const SourceSeparationView = ({ activeSeparatorKey, setActiveSeparator=()
             </div>
             <List
                 grid={{ gutter: 16, column: 2 }}
-                dataSource={[...separatorConfig].sort((a, b) => {
-                    const getScore = (x: SeparatorConfig) => {
-                        const [, spec] = Object.entries(x.specs).find(([key, spec]) => key === currentSort)!;
-                        return spec.score;
-                    };
-                    return getScore(b) - getScore(a);
-                })}
+                dataSource={sortedSeparators}
                 renderItem={(separator) => (
-                    <List.Item>
-                        <SeparatorCard separator={separator} key={separator.key} onSelect={setActiveSeparator}/>
+                    <List.Item key={separator.key}>
+                        <SeparatorCard separator={separator} onSelect={setActiveSeparator}/>
                     </List.Item>
                 )}
             />
