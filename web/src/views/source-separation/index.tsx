@@ -1,40 +1,40 @@
-import { Select, Space, Typography } from 'antd';
-import { RouteComponentProps } from 'react-router-dom';
+import { Breadcrumb, List, Select, Space, Typography } from 'antd';
+import { Link, RouteComponentProps } from 'react-router-dom';
+import QueueAnim from 'rc-queue-anim';
 import { SeparatorCard } from '../../components/separator-card';
 import { useRecoilValue } from 'recoil';
 import { appConfigState } from '../../recoil/state/app-config';
 import './source-separation.css';
 import { SeparatorConfig, SpecConfig } from '../../api';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { Option } = Select;
 
-interface SourceSeparationViewProps extends RouteComponentProps {
+interface SourceSeparationViewProps {
     activeSeparatorKey?: string,
-    setActiveSeparator: (key: string) => void
+    setActiveSeparator?: (key: string) => void
 }
 
-export const SourceSeparationView = ({ activeSeparatorKey, setActiveSeparator }: SourceSeparationViewProps) => {
+export const SourceSeparationView = ({ activeSeparatorKey, setActiveSeparator=()=>{} }: SourceSeparationViewProps) => {
     const [currentSort, setSort] = useState<string>("quality");
-    const { separator_config: separatorConfig, default_separator: defaultSeparator } = useRecoilValue(appConfigState)!;
+    const { separator_config: separatorConfig } = useRecoilValue(appConfigState)!;
 
-    if (!activeSeparatorKey) activeSeparatorKey = defaultSeparator;
-    const activeSeparator = separatorConfig.find((separator) => separator.key === activeSeparatorKey)!;
-    if (!activeSeparator.enabled) setActiveSeparator(defaultSeparator);
-    
-    // Just in case the first separator or whatever should be arbitrarily chosen
-    // for its SpecConfig to generate sort options was missing specs,
-    // collect all the specs that every separator has and reduce them down to a single
-    // SpecConfig.
-    // const sortOptions = separatorConfig.flatMap((separator) => Object.entries(separator.specs))
-    //     .reduce<SpecConfig>((acc: any, cur) => {
-    //         const [key, value] = cur;
-    //         if (!acc[key]) acc[key] = value;
-    //         return acc;
-    //     }, {} as SpecConfig);
+    const activeSeparator = separatorConfig.find((separator) => separator.key === activeSeparatorKey);
+
     const sortOptions = separatorConfig[0].specs;
+    if (activeSeparator) return (
+        <Fragment>
+        <Breadcrumb>
+            <Breadcrumb.Item key={"/"}><Link to="/">Separate</Link></Breadcrumb.Item>
+            <Breadcrumb.Item key={"/"}>{activeSeparator.name}</Breadcrumb.Item>
+        </Breadcrumb>
+        <Text>{activeSeparator.name}</Text>
+        </Fragment>
+    );
     return (
+        <Fragment>
+        
         <Space direction="vertical" style={{ width: "100%" }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <Title level={4}>Supported models</Title>
@@ -46,7 +46,22 @@ export const SourceSeparationView = ({ activeSeparatorKey, setActiveSeparator }:
                     ))}
                 </Select>
             </div>
-            {
+            <List
+                grid={{ gutter: 16, column: 2 }}
+                dataSource={[...separatorConfig].sort((a, b) => {
+                    const getScore = (x: SeparatorConfig) => {
+                        const [, spec] = Object.entries(x.specs).find(([key, spec]) => key === currentSort)!;
+                        return spec.score;
+                    };
+                    return getScore(b) - getScore(a);
+                })}
+                renderItem={(separator) => (
+                    <List.Item>
+                        <SeparatorCard separator={separator} key={separator.key} onSelect={setActiveSeparator}/>
+                    </List.Item>
+                )}
+            />
+            {/* {
                 // Shallow-copy to avoid mutating read-only state.
                 [...separatorConfig].sort((a, b) => {
                     const getScore = (x: SeparatorConfig) => {
@@ -56,9 +71,10 @@ export const SourceSeparationView = ({ activeSeparatorKey, setActiveSeparator }:
                     return getScore(b) - getScore(a);
                 })
                 .map((separator, i) => (
-                    <SeparatorCard separator={separator} key={separator.key}/>
+                    <SeparatorCard separator={separator} key={separator.key} onSelect={setActiveSeparator}/>
                 ))
-            }
+            } */}
         </Space>
+        </Fragment>
     );
 };

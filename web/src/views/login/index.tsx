@@ -15,7 +15,7 @@ import { ValidatorRule } from "rc-field-form/lib/interface";
 import { useForm } from "antd/lib/form/Form";
 import { Link, Redirect } from "react-router-dom";
 import { FormWrapper } from "./form-wrapper";
-import { appConfigState } from "../../recoil/state/app-config";
+import { environmentState } from "../../recoil/state/environment";
 
 const { Text } = Typography;
 
@@ -43,19 +43,15 @@ interface LoginViewProps {
 
 export const LoginView = ({ type, asComponent, typeChanged, onCompleted, rememberMeClicked=()=>{} }: LoginViewProps) => {
     const api = useApi();
-    const { handleApiError } = useError();
+    const { handleApiError } = useError()!;
     const [form] = useForm();
-    const { login_features: {
-        login_enabled: loginEnabled,
-        google_login: googleEnabled,
-        apple_login: appleEnabled
-    } } = useRecoilValue(appConfigState)!;
+    const { loginEnabled, googleToken, appleToken } = useRecoilValue(environmentState)!;
     const setLoggedIn = useSetRecoilState(loggedInState);
     const [errors, setErrors] = useState<FormError[]>([]);
     const [revalidateForm, setRevalidateForm] = useState<boolean>(false);
     const [currentlyValidating, setCurrentlyValidating] = useState<boolean>(false);
 
-    const noExtraOptions = !googleEnabled && !appleEnabled;
+    const noExtraOptions = !googleToken && !appleToken;
 
     useEffect(() => {
         setErrors([]);
@@ -178,8 +174,8 @@ export const LoginView = ({ type, asComponent, typeChanged, onCompleted, remembe
                                 </Text>
                             </Divider>
                             <Space>
-                                {googleEnabled && <GoogleCircleFilled style={{... iconStyles, color: "#1677FF" }}/>}
-                                {appleEnabled && <AppleFilled style={{... iconStyles, color: "#333333" }}/>}
+                                {googleToken && <GoogleCircleFilled style={{... iconStyles, color: "#1677FF" }}/>}
+                                {appleToken && <AppleFilled style={{... iconStyles, color: "#333333" }}/>}
                             </Space>
                         </div>
                     }

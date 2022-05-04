@@ -27,16 +27,10 @@ export interface SeparatorConfig {
   enabled: boolean,
   schema: any
 }
-export interface LoginConfig {
-  login_enabled: boolean,
-  google_login: boolean,
-  apple_login: boolean
-}
 
 export interface AppConfig {
   separator_config: SeparatorConfig[],
-  default_separator: string,
-  login_features: LoginConfig
+  default_separator: string
 }
 
 interface UserHistoryEntry {

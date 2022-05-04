@@ -5,10 +5,11 @@ import { Feature, SeparatorConfig, Spec } from "../../api";
 const { Title, Text, Link } = Typography;
 
 interface SeparatorCardProps {
-    separator: SeparatorConfig
+    separator: SeparatorConfig,
+    onSelect: (key: string) => void
 }
 
-export const SeparatorCard = ({ separator }: SeparatorCardProps) => {
+export const SeparatorCard = ({ separator, onSelect }: SeparatorCardProps) => {
     const [sizedTitleBody, width, height]: any = useSizeMe(() => (
         <div style={{ flex: 1 }}>
             <Title level={5} style={{ margin: 0 }}>{separator.name}</Title>
@@ -74,7 +75,7 @@ export const SeparatorCard = ({ separator }: SeparatorCardProps) => {
             </Space>
             <Divider/>
             <Space align="center" style={{ width: "100%", justifyContent: "flex-end" }}>
-                <Button type="primary">Go</Button>
+                <Button type="primary" onClick={() => onSelect(separator.key)}>Go</Button>
             </Space>
         </Card>
     );

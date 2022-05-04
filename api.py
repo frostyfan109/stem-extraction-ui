@@ -17,6 +17,7 @@ def create_app():
     app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(weeks=4)
 
     app.config["ENABLE_LOGIN"] = os.environ.get("ENABLE_LOGIN", "true") == "true"
+    app.config["REQUIRE_LOGIN"] = os.environ.get("REQUIRE_LOGIN", "true") == "true"
     app.config["GOOGLE_OAUTH_TOKEN"] = os.environ.get("GOOGLE_OAUTH_TOKEN", None)
     app.config["APPLE_TOKEN"] = os.environ.get("APPLE_TOKEN", None)
     

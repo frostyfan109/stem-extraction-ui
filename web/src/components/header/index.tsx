@@ -2,8 +2,8 @@ import { NodeExpandOutlined } from "@ant-design/icons";
 import { Space, Typography, Layout, Menu, Button, Modal } from "antd";
 import { Fragment, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useRecoilState, useRecoilValue } from "recoil";
-import { useApi, useDest } from "../../contexts";
+import { useRecoilValue } from "recoil";
+import { useApi, useDest, useLoading } from "../../contexts";
 import { appConfigState } from "../../recoil/state/app-config";
 import { environmentState, SHOW_PAGE } from "../../recoil/state/environment";
 import { loggedInState } from "../../recoil/state/login";
@@ -19,17 +19,10 @@ export const Header = ({ onLogout }: { onLogout: () => void }) => {
     const location = useLocation();
     const dest = useDest();
     const api = useApi();
+    const { loading } = useLoading();
     const loggedIn = useRecoilValue(loggedInState);
     const environment = useRecoilValue(environmentState)!;
-    const {
-        login_features: {
-            login_enabled: loginEnabled
-        },
-        separator_config: separatorConfig
-    } = useRecoilValue(appConfigState) || {
-        login_features: { login_enabled: false },
-        separator_config: []
-    };
+    const { separator_config: separatorConfig } = useRecoilValue(appConfigState) || { separator_config: [] };
     const [loginModalVisible, setLoginModalVisible] = useState(false);
     const [loginModalType, setLoginModalType] = useState<LoginType>(LOGIN);
 
@@ -52,12 +45,13 @@ export const Header = ({ onLogout }: { onLogout: () => void }) => {
         <Fragment>
         <AntHeader className="Header">
             <Space className="left-header">
-                <Link className="logo" to="/">
+                <Link className="logo" to={"/"}>
                     <Space>
                         <NodeExpandOutlined style={{ fontSize: "24px", verticalAlign: "middle" }}/>
                         <Title level={3} style={{ margin: 0 }}>Stem Extractor</Title>
                     </Space>
                 </Link>
+                {!loading && (
                 <Menu theme="light" mode="horizontal" selectedKeys={[activeKey]}>
                     <Menu.Item key="/"><Link to="/">Separate</Link></Menu.Item>
                     {loggedIn && (
@@ -66,13 +60,14 @@ export const Header = ({ onLogout }: { onLogout: () => void }) => {
                         </Fragment>
                     )}
                 </Menu>
+                )}
             </Space>
             <Space>
             {
-                loggedIn ? (
+                loading ? null : loggedIn ? (
                     <Button type="default" onClick={handleLogout}>Logout</Button>
                 ) : (
-                    loginEnabled && (
+                    environment.loginEnabled && (
                         <Fragment>
                             <Button type="text" onClick={(e) => login(e, LOGIN)} href="/login">Sign in</Button>
                             <Button type="ghost" onClick={(e) => login(e, SIGNUP)} href="/signup">Sign up</Button>

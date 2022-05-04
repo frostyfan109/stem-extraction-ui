@@ -45,11 +45,11 @@ type HandleUncaughtAPIErrorOptions = Partial<HandleErrorOptions> & {
     error: APIError | Error
 }
 
-export const ErrorContext = createContext<ErrorHandler>({} as ErrorHandler);
+export const ErrorContext = createContext<ErrorHandler|null>(null);
 
 export const ErrorProvider = ({ children }: any) => {
     const [errorModals, setErrorModals] = useState<ModalRef[]>([]);
-    const [context, setContext] = useState<ErrorHandler>({} as ErrorHandler);
+    const [context, setContext] = useState<ErrorHandler|null>(null);
     useEffect(() => {
         const handleError = ({
             errorName,

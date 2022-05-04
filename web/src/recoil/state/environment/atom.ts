@@ -15,7 +15,10 @@ export const SHOW_PAGE = "false";
 interface Environment {
     protectedRouteBehavior: ProtectedRouteBehavior,
     loginPopupBehavior: LoginPopupBehavior,
-    apiUrl: string
+    apiUrl: string,
+    loginEnabled: boolean,
+    googleToken: string | null,
+    appleToken: string | null
 }
 
 export const environmentState = atom<Environment|null>({

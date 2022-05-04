@@ -1,20 +1,16 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { APICallbacks, APIError, ApiV1, IApi } from '../api';
-import { appConfigState } from '../recoil/state/app-config';
 import { environmentState } from '../recoil/state/environment';
 import { loggedInState } from '../recoil/state/login';
-import { appLoadingState } from '../recoil/state/selectors';
 import { useError } from './error-context';
 
 export const ApiContext = createContext<IApi|null>(null);
 
 export const ApiProvider = ({ children }: any) => {
-    const { handleApiError } = useError();
+    const { handleApiError } = useError() || {};
     const [api, setApi] = useState<IApi|null>(null);
     const environment = useRecoilValue(environmentState);
-    const appConfig = useRecoilValue(appConfigState);
-    const appLoading = useRecoilValue(appLoadingState);
     const setLoggedIn = useSetRecoilState(loggedInState);
 
     const apiUrl = useMemo(() => environment?.apiUrl, [environment]);
@@ -24,7 +20,7 @@ export const ApiProvider = ({ children }: any) => {
             console.log("do logout");
             setLoggedIn(false);
         },
-        handleApiError: (error) => handleApiError({ error })
+        handleApiError: handleApiError ? (error) => handleApiError({ error }) : (error) => console.error(error)
     }), [handleApiError, setLoggedIn]);
     useEffect(() => {
         if (apiUrl) {
@@ -36,10 +32,10 @@ export const ApiProvider = ({ children }: any) => {
         } else setApi(null);
     }, [apiUrl]);
     useEffect(() => {
-        if (api && !appLoading) {
-            if (appConfig?.login_features.login_enabled) setLoggedIn(api.authenticated);
+        if (api && environment) {
+            setLoggedIn(environment.loginEnabled ? api.authenticated : false);
         }
-    }, [api, appLoading]);
+    }, [api, environment]);
     useEffect(() => {
         if (api) api.updateCallbacks(callbacks);
     }, [api, callbacks]);

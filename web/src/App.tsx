@@ -1,14 +1,13 @@
 import { Fragment, useEffect, useState } from 'react';
 import { Divider, Layout, Space, Spin, Typography } from 'antd';
-import { matchPath, Route, RouteComponentProps, Switch, useHistory, useLocation } from 'react-router-dom';
-import { SourceSeparationView, Error404View, LoginView, LOGIN, SIGNUP, HistoryView } from './views';
-import { useApi, useDest, useError } from './contexts';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { matchPath, Redirect, Route, RouteComponentProps, Switch, useHistory, useLocation } from 'react-router-dom';
+import { SourceSeparationView, Error404View, LoginView, LOGIN, SIGNUP, HistoryView, HomeView } from './views';
+import { useApi, useDest, useError, useLoading } from './contexts';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { appConfigState } from './recoil/state/app-config';
 import './App.css';
 import { Header } from './components/header';
-import { ProtectedRoute } from './components';
-import { appLoadingState } from './recoil/state/selectors';
+import { ProtectedRoute, ProtectedRouteProps } from './components';
 import { environmentState, LoginPopupBehavior, LOGIN_REDIRECT, POPUP, ProtectedRouteBehavior } from './recoil/state/environment';
 import { EnvironmentError, loadEnvironmentValue } from './utils';
 import { loggedInState } from './recoil/state/login';
@@ -20,17 +19,17 @@ export const App = () => {
   const history = useHistory();
   const location = useLocation();
   const api = useApi();
-  const dest = useDest()!;
-  const { handleError } = useError();
-  const setAppConfig = useSetRecoilState(appConfigState);
-  const setEnvironment = useSetRecoilState(environmentState);
-  const setLoggedIn = useSetRecoilState(loggedInState);
+  const dest = useDest();
+  const { appStateLoading } = useLoading();
+  const { handleError } = useError() || {};
+  const [environment, setEnvironment] = useRecoilState(environmentState);
   const appConfig  = useRecoilValue(appConfigState);
-  const appLoading = useRecoilValue(appLoadingState);
+  const setAppConfig = useSetRecoilState(appConfigState);
+  const setLoggedIn = useSetRecoilState(loggedInState);
 
 
-  const protectedRoutes = [
-    { exact: true, path: "/history", component: HistoryView }
+  const protectedRoutes: any = [
+    { exact: true, path: "/history", component: HistoryView },
   ];
 
   useEffect(() => {
@@ -46,11 +45,15 @@ export const App = () => {
   }, [api, setAppConfig]);
 
   useEffect(() => {
+    if (!handleError) return;
     (async () => {
       const errors: EnvironmentError[] = [];
       let PROTECTED_ROUTE_BEHAVIOR = LOGIN_REDIRECT as ProtectedRouteBehavior;
       let LOGIN_POPUP_BEHAVIOR = POPUP as LoginPopupBehavior;
       let API_URL = window.location.protocol + "//" + window.location.host;
+      let LOGIN_ENABLED = true;
+      let GOOGLE_TOKEN = null;
+      let APPLE_TOKEN = null;
       try {
         PROTECTED_ROUTE_BEHAVIOR = loadEnvironmentValue("REACT_APP_PROTECTED_ROUTE_BEHAVIOR", ["login_redirect", "show_error"]);
       } catch (e) {
@@ -66,10 +69,28 @@ export const App = () => {
       } catch (e) {
         errors.push(e as EnvironmentError);
       }
+      try {
+        LOGIN_ENABLED = loadEnvironmentValue("REACT_APP_LOGIN_ENABLED", ["true", "false"]);
+      } catch (e) {
+        errors.push(e as EnvironmentError);
+      }
+      try {
+        GOOGLE_TOKEN = loadEnvironmentValue("REACT_APP_GOOGLE_TOKEN", undefined, false);
+      } catch (e) {
+        errors.push(e as EnvironmentError);
+      }
+      try {
+        APPLE_TOKEN = loadEnvironmentValue("REACT_APP_APPLE_TOKEN", undefined, false);
+      } catch (e) {
+        errors.push(e as EnvironmentError);
+      }
       setEnvironment({
           protectedRouteBehavior: PROTECTED_ROUTE_BEHAVIOR,
           loginPopupBehavior: LOGIN_POPUP_BEHAVIOR,
-          apiUrl: API_URL
+          apiUrl: API_URL,
+          loginEnabled: LOGIN_ENABLED,
+          googleToken: GOOGLE_TOKEN,
+          appleToken: APPLE_TOKEN,
       });
       if (errors.length > 0) {
           handleError({
@@ -93,7 +114,7 @@ export const App = () => {
           });
       }
     })();
-  }, []);
+  }, [handleError]);
 
   const loginComplete = () => {
     dest.redirectToDest();
@@ -102,34 +123,30 @@ export const App = () => {
   const handleLogout = () => {
     if (api) api.logout();
     setLoggedIn(false);
-    if (matchPath(location.pathname, protectedRoutes[0])) {
+    if (protectedRoutes.some((route: any) => matchPath(location.pathname, route))) {
       // Currently viewing a login-protected route.
       history.push("/");
     }
   };
-
-  const sourceSeparationView = (activeSeparator: string, props: RouteComponentProps) => (
-    <SourceSeparationView setActiveSeparator={(key) => {
-      if (key === appConfig!.default_separator) history.push("/");
-      else history.push(`/${key}`);
-    }} activeSeparatorKey={activeSeparator} {...props}/>
-  );
-
   const isPageLogin = location.pathname === "/signup" || location.pathname === "/login";
   return (
     <Layout className="layout">
       {!isPageLogin && <Header onLogout={handleLogout}/>}
       <Content>
-        {appLoading ? (
+        {appStateLoading ? (
           <div style={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
             <Spin/>
           </div>
         ) : (
           <Switch>
-            <Route exact path="/" render={(props) => sourceSeparationView(appConfig!.default_separator, props)}/>
+            <Route exact path="/" render={() => (
+              <SourceSeparationView setActiveSeparator={(key) => history.push("/" + key)}/>
+            )}/>
             {
               appConfig!.separator_config.map((separator) => (
-                <Route exact key={separator.key} path={`/${separator.key}`} render={(props) => sourceSeparationView(separator.key, props)}/>
+                <Route exact key={separator.key} path={`/${separator.key}`} render={(props) => (
+                  <SourceSeparationView activeSeparatorKey={separator.key}/>
+                )}/>
               ))
             }
             <Route exact path="/login" render={(props) => (
@@ -144,7 +161,7 @@ export const App = () => {
                 search: location.search
               })} onCompleted={loginComplete} asComponent={false}/>
             )}/>
-            {protectedRoutes.map((route) => (
+            {protectedRoutes.map((route: any) => (
               <ProtectedRoute key={route.path} {...route}/>
             ))}
             <Route path="*" component={Error404View}/>
