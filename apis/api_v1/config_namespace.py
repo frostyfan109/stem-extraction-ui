@@ -3,7 +3,9 @@ import os
 import yaml
 from flask import current_app
 from flask_restx import Namespace, Resource
-from separators import Demucs, Spleeter
+from flask_jwt_extended import get_jwt_identity
+from .jwt_decorators import jwt_required
+from separators import separators
 
 logger = logging.getLogger(__file__)
 
@@ -11,19 +13,17 @@ api = Namespace("config", path="/config", description="Config")
 
 @api.route("/app")
 class AppConfig(Resource):
+    @jwt_required(optional=True)
     def get(self):
-        with open(os.path.join(os.path.dirname(__file__), "../../separator-config.yaml"), "r") as f:
-            separator_config = yaml.safe_load(f)
+        
+        login_state = None
+        username = get_jwt_identity()
+        if username is not None:
+            login_state = {
+
+            }
         return {
-            # "login_features": {
-            #     "login_enabled": current_app.config["ENABLE_LOGIN"],
-            #     "login_required": current_app.config["REQUIRE_LOGIN"],
-            #     "google_login": current_app.config["GOOGLE_OAUTH_TOKEN"] is not None,
-            #     "apple_login": current_app.config["APPLE_TOKEN"] is not None
-            # },
-            "separator_config": [
-                Demucs(separator_config).serialize(),
-                Spleeter(separator_config).serialize()
-            ],
-            "default_separator": "demucs"
+            "separator_config": [separator.serialize() for separator in separators],
+            "default_separator": "demucs",
+            "login_state": login_state
         }

@@ -1,6 +1,6 @@
 import { AxiosRequestConfig } from "axios";
 import { APIError, APIRequestError, APIResponseError, ThrownAPIError } from "./api-errors";
-import { AppConfigResponse, HistoryResponse, LoginResponse, LogoutResponse, RegisterResponse } from "./api-responses";
+import { AppConfigResponse, HistoryResponse, LoginResponse, LogoutResponse, MonitorSeparationResponse, MonitorSeparationState, RegisterResponse, SchemaArgs, SeparatorConfig, UploadSeparateResponse } from "./api-responses";
 
 interface ErrorInfo {
     // The API only attaches tracebacks to internal server errors.
@@ -42,6 +42,18 @@ export abstract class IApi {
     protected abstract handleError(error: APIError): void;
     abstract getAppConfig(fetchOptions?: AxiosRequestConfig): Promise<AppConfigResponse>
     abstract getUserHistory(fetchOptions?: AxiosRequestConfig): Promise<HistoryResponse>
+    abstract uploadSeparate(
+        separator: SeparatorConfig,
+        file: Blob,
+        fileName: string,
+        args: SchemaArgs,
+        fetchOptions?: AxiosRequestConfig
+    ): Promise<UploadSeparateResponse>
+    abstract monitorSeparation(
+        separationId: string,
+        clientState: MonitorSeparationState|null,
+        fetchOptions?: AxiosRequestConfig
+    ): Promise<MonitorSeparationResponse>
     abstract login(
         username: string,
         password: string,

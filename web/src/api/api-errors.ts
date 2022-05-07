@@ -28,6 +28,9 @@ export class APIResponseError extends APIError {}
 export interface ThrownAPIError {
     status_code: number
 }
+export const Throws404: ThrownAPIError = {
+    status_code: 404
+};
 export const Throws401: ThrownAPIError = {
     status_code: 401
 };

@@ -1,15 +1,21 @@
-import yaml
+from datetime import timedelta
 import os
 
-separator_config_path = os.path.join(os.path.dirname(__file__), "separator-config.yaml")
+SQLALCHEMY_DATABASE_URI = "sqlite:///app.db"
+SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-with open(separator_config_path, "r") as f:
-    separator_config = yaml.safe_load(f)
-    separators = separator_config["separators"]
-    for separator_name in separators:
-        separator = separators[separator_name]
-        schema = []
+JWT_SECRET_KEY = os.environ["JWT_SECRET_KEY"]
+POLL_DELAY = int(os.environ.get("POLL_DELAY", "1000")) / 1000
+ENABLE_LOGIN = os.environ.get("ENABLE_LOGIN", "true") == "true"
+GOOGLE_OAUTH_TOKEN = os.environ.get("GOOGLE_OAUTH_TOKEN", None)
+APPLE_TOKEN = os.environ.get("APPLE_TOKEN", None)
+STORAGE = os.environ["STORAGE"]
+AWS_BUCKET_NAME = os.environ.get("AWS_BUCKET_NAME", None)
+AWS_ACCESS_KEY = os.environ.get("AWS_ACCESS_KEY", None)
+AWS_SECRET_KEY = os.environ.get("AWS_SECRET_KEY", None)
 
-config = {
-    **separator_config
-}
+JWT_ACCESS_COOKIE_NAME = "access_token"
+JWT_REFRESH_COOKIE_NAME = "refresh_token"
+JWT_ACCESS_TOKEN_EXPIRES = timedelta(seconds=600)
+JWT_REFRESH_TOKEN_EXPIRES = timedelta(weeks=4)
+JWT_TOKEN_LOCATION = ["headers", "cookies"]

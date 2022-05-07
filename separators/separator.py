@@ -1,8 +1,13 @@
-from dataclasses import dataclass, asdict
+import asyncio
+import json
 import os
-from typing import List
+import jsonschema
 import yaml
+import tempfile
+from dataclasses import dataclass, asdict
 from abc import ABC, abstractmethod
+from typing import List
+from subprocess import Popen, PIPE
 
 @dataclass
 class Spec:
@@ -37,6 +42,18 @@ class MultipleModels(Feature):
         super().__init__(name="Multiple models", description=description, **kwargs)
 
 @dataclass
+class Stem:
+    name: str
+    path: str
+    original: str = None
+    source: bool = False
+
+@dataclass
+class ExampleStems:
+    name: str
+    stems: List[Stem]
+
+@dataclass
 class SeparatorConfig:
     key: str
     name: str
@@ -44,11 +61,17 @@ class SeparatorConfig:
     description: str
     specs: SpecConfig
     features: List[Feature]
+    examples: List[ExampleStems]
 
     schema_path: str
     exe: str
 
     logo_url: str = None
+
+
+@dataclass
+class SeparatedFile:
+    file_bytes: bytes
 
 
 class Separator(ABC, SeparatorConfig):
@@ -65,24 +88,29 @@ class Separator(ABC, SeparatorConfig):
         with open(os.path.join(os.path.dirname(__file__), self.schema_path), "r") as f:
             return yaml.safe_load(f)
 
-    def create_cli_args(self, args):
-        # args = {
-        #     "track": "",
-        #     "name": "mdx",
-        #     "device": "cuda",
-        #     "shifts": 10,
-        #     "overlap": .25,
-        #     "jobs": 1,
-        #     "two_stems": True,
-        #     "mp3": True,
-        #     "mp3_bitrate": 192
-        # }
-        args = {
-            "name": "mdx",
-            "output_format": "Output as mp3 (256kbps)"
-        }
-        cli_pos_args = []
+    # def separate(self, file_path, args) -> List[SeparatedFile]:
+    #     popen = Popen(self.create_cli_args([file_path], args), stdout=PIPE)
+    #     return popen
+
+    def create_cli_args(self, pos_args, args):
         cli_opt_args = {}
+
+        try:
+            jsonschema.validate(instance=args, schema=self.schema)
+        except jsonschema.ValidationError as e:
+            raise e
+
+        # Remove any arguments that aren't in the schema
+        args = {
+            arg: arg_value for arg, arg_value in args.items()
+            if arg in self.schema["properties"]
+        }
+        # Set omitted arguments to their default values
+        for arg in self.schema["properties"]:
+            default_value = self.schema["properties"][arg].get("default")
+            if arg not in args and default_value is not None:
+                args[arg] = default_value
+        # Apply hook transformations of arguments
         for arg_name in self.schema["properties"]:
             schema = self.schema["properties"][arg_name]
             hook = schema.get("hook", [])
@@ -97,30 +125,24 @@ class Separator(ABC, SeparatorConfig):
                         args[arg] = mapping[arg]
             if do_delete:
                 del args[arg_name]
-        print(args)
 
+        # Convert argument values into strings
         for arg_name in args:
             schema = self.schema["properties"][arg_name]
-            
-            # if not arg_name in args:
-            #     args[arg_name] = schema["default"]
+
             arg_value = args[arg_name]
 
             if schema["type"] == "boolean":
                 arg_value = "true" if arg_value else "false"
+            elif schema["type"] == "string":
+                pass
             else:
-                arg_value = str(arg_value)
-            if schema.get("positional") == True:
-                cli_pos_args.append(arg_value)
-            else:
-                cli_opt_args[schema["arg"]] = arg_value
-            
-        print(cli_pos_args)
-        print(cli_opt_args)
+                arg_value = json.dumps(arg_value)
+            cli_opt_args[schema["arg"]] = arg_value
 
-        args = [self.target, *cli_pos_args] + [arg + "=" + cli_opt_args[arg] for arg in cli_opt_args]
-
-        print(args)
+        args = [self.target, *pos_args] + [arg + "=" + cli_opt_args[arg] for arg in cli_opt_args]
+        return args
+        # print(args)
 
     @property
     def schema(self):

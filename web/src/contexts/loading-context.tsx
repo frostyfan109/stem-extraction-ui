@@ -2,17 +2,20 @@ import { createContext, useContext, useMemo } from "react";
 import { useRecoilValue } from "recoil";
 import { appConfigState } from "../recoil/state/app-config";
 import { environmentState } from "../recoil/state/environment";
+import { loggedInState } from "../recoil/state/login";
 import { useApi } from "./api-context";
 import { useError } from "./error-context";
 
 interface ILoadingContext {
     loading: boolean,
-    appStateLoading: boolean
+    appStateLoading: boolean,
+    loginStateLoading: boolean
 }
 
 export const LoadingContext = createContext<ILoadingContext>({
     loading: true,
-    appStateLoading: true
+    appStateLoading: true,
+    loginStateLoading: true
 });
 
 export const LoadingProvider = ({ children }: any) => {
@@ -20,6 +23,7 @@ export const LoadingProvider = ({ children }: any) => {
     const errorHandler = useError();
     const environment = useRecoilValue(environmentState);
     const appConfig = useRecoilValue(appConfigState);
+    const loggedIn = useRecoilValue(loggedInState);
 
     const loading = useMemo(() => (
         environment === null ||
@@ -32,10 +36,18 @@ export const LoadingProvider = ({ children }: any) => {
         appConfig === null
     ), [loading, appConfig]);
 
+    const loginStateLoading = useMemo(() => (
+        loading ||
+        loggedIn === null ||
+        appConfig === null ||
+        appConfig.login_state === null
+    ), [loading, loggedIn, appConfig]);
+
     return (
         <LoadingContext.Provider value={{
             loading,
-            appStateLoading
+            appStateLoading,
+            loginStateLoading
         }}>
             {children}
         </LoadingContext.Provider>

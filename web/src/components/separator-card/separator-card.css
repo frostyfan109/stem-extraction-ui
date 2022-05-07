@@ -1,0 +1,9 @@
+.separator-card-upload {
+    text-align: inherit !important;
+}
+.separator-card-upload > .ant-upload {
+    padding: 0 !important;
+}
+.quick-upload-btn > .ant-upload {
+    padding: 0 !important;
+}

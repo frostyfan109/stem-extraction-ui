@@ -1,9 +1,11 @@
 from datetime import datetime
 from sqlalchemy.ext.hybrid import hybrid_property
+
+from .separation import Separation
 from . import db, bcrypt
 
 class User(db.Model):
-    __tablename__ = "users"
+    __tablename__ = "user"
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(16), unique=True, index=True)
     email = db.Column(db.String(256), unique=True, index=True)
@@ -11,6 +13,8 @@ class User(db.Model):
     password_hash = db.Column(db.String(128))
     creation_date = db.Column(db.DateTime(), default=datetime.utcnow)
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
+
+    separations = db.relationship(Separation, backref="user", lazy="dynamic")
 
     @hybrid_property
     def password(self):
@@ -25,6 +29,5 @@ class User(db.Model):
     
     def serialize(self):
         return {
-            "username": self.username,
-            "email": self.email
+            "username": self.username
         }

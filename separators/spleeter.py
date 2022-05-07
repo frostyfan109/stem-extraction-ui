@@ -16,3 +16,8 @@ Highly efficient source separation algorithm developed by Deezer in 2019."""
     features = [
       MultitracksFeature()
     ]
+    examples = []
+
+    def create_cli_args(self, pos_args, args):
+      pos_args = ["separate", *pos_args]
+      return super().create_cli_args(pos_args, args)

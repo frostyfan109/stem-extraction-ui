@@ -3,7 +3,8 @@ import deepmerge from "deepmerge";
 import Cookies from "js-cookie";
 import JwtDecode, { JwtPayload } from "jwt-decode";
 import { APICallbacks, APIRequest, IApi } from "./api";
-import { APIError, APIRequestError, Throws400, Throws401 } from "./api-errors";
+import { APIError, APIRequestError, Throws400, Throws401, Throws404 } from "./api-errors";
+import { MonitorSeparationResponse, MonitorSeparationState, SchemaArgs, SeparatorConfig } from "./api-responses";
 
 interface APIV1Options {
     apiUrl: string,
@@ -101,9 +102,6 @@ export class ApiV1 extends IApi {
     // will still return this error, but it will not be passed to `handleError`.
     handleError(error: APIError) {
         if (error instanceof APIRequestError) {
-            console.log("Show error modal");
-            console.log(this.handleApiError);
-            (window as any).x = this.handleApiError;
             this.handleApiError(error);
         } else {
             if (error.response.status_code === 401) {
@@ -122,7 +120,37 @@ export class ApiV1 extends IApi {
     }
     @APIRequest()
     async getUserHistory(fetchOptions: AxiosRequestConfig) {
-        const res = await this.axios.get( "/user/history", {
+        const res = await this.axios.get("/user/history", {
+            ...fetchOptions
+        });
+        return res.data;
+    }
+    @APIRequest()
+    async uploadSeparate(
+        separator: SeparatorConfig,
+        file: Blob,
+        fileName: string,
+        args: SchemaArgs,
+        fetchOptions: AxiosRequestConfig
+    ) {
+        const formData = new FormData();
+        formData.append("file", file, fileName);
+        formData.append("separator_id", separator.key);
+        formData.append("args", JSON.stringify(args));
+        const res = await this.axios.post("/user/separate", formData, {
+            ...fetchOptions
+        });
+        return res.data;
+    }
+    @APIRequest(Throws404)
+    async monitorSeparation(
+        separationId: string,
+        clientState: MonitorSeparationState|null,
+        fetchOptions?: AxiosRequestConfig
+    ) {
+        const res = await this.axios.post(`/user/separate/${separationId}`, {
+            client_state: clientState
+        }, {
             ...fetchOptions
         });
         return res.data;

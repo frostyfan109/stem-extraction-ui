@@ -1,4 +1,4 @@
-from .separator import MultipleModels, MultitracksFeature, QualitySpec, Separator, Spec, SpecConfig, SpeedSpec
+from .separator import ExampleStems, MultipleModels, MultitracksFeature, QualitySpec, Separator, Spec, SpecConfig, SpeedSpec, Stem
 
 class Demucs(Separator):
     key = "demucs"
@@ -17,15 +17,32 @@ Highly accurate source separation algorithm developed by researchers at Facebook
       MultitracksFeature(),
       MultipleModels()
     ]
-
-import yaml
-x = Demucs(yaml.safe_load("""---
-separators:
-  demucs:
-    enabled: true
-    exe: null # specify executable location if not in path
-    disabled_args: ["jobs"]
-  spleeter:
-    enabled: true
-    exe: null
-    disabled_args: []"""))
+    examples = [
+      ExampleStems(
+        name="juice dy2 mix01.mp3",
+        stems=[
+          Stem(
+            name="Source",
+            path="/demucs-examples/juice dy2 mix01/og_full.mp3",
+            source=True
+          ),
+          Stem(
+            name="Vocals",
+            path="/demucs-examples/juice dy2 mix01/vocals.wav",
+            original="/demucs-examples/juice dy2 mix01/og_vocals.wav"
+          ),
+          Stem(
+            name="Bass",
+            path="/demucs-examples/juice dy2 mix01/bass.wav",
+          ),
+          Stem(
+            name="Drums",
+            path="/demucs-examples/juice dy2 mix01/drums.wav",
+          ),
+          Stem(
+            name="Other",
+            path="/demucs-examples/juice dy2 mix01/other.wav",
+          )
+        ]
+      )
+    ]

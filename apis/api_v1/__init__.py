@@ -1,9 +1,11 @@
 from http import HTTPStatus
 import json
 import re
+import os
+import yaml
 import traceback
 from venv import create
-from flask import Blueprint, request, make_response, current_app
+from flask import Blueprint, request, make_response, current_app, g
 from flask.json import jsonify
 from flask_cors import CORS
 from flask_caching import Cache
@@ -13,7 +15,9 @@ from flask_jwt_extended.exceptions import JWTExtendedException
 from jwt import decode, ExpiredSignatureError, PyJWTError
 from werkzeug.exceptions import HTTPException
 
-from .jwt_auth_middleware import JWTAuthMiddleware
+from separators.demucs import Demucs
+from separators.spleeter import Spleeter
+
 from .config_namespace import api as config_ns
 from .separator_namespace import api as separator_ns
 from .user_namespace import api as user_ns
@@ -60,10 +64,6 @@ def other_error_handler(error):
             "traceback": traceback.format_exc()
         }
     }, code.value
-@blueprint.before_app_first_request
-def before_app_first_request():
-    app = current_app._get_current_object()
-    app.wsgi_app = JWTAuthMiddleware(app)
 @blueprint.after_request
 def response_processor(response):
     relative_url = re.sub(api.base_url, "", request.url, count=1)

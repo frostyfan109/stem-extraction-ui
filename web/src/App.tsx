@@ -1,7 +1,11 @@
 import { Fragment, useEffect, useState } from 'react';
 import { Divider, Layout, Space, Spin, Typography } from 'antd';
 import { matchPath, Redirect, Route, RouteComponentProps, Switch, useHistory, useLocation } from 'react-router-dom';
-import { SourceSeparationView, Error404View, LoginView, LOGIN, SIGNUP, HistoryView, HomeView } from './views';
+import {
+  Error404View, HistoryView, HomeView,
+  LoginView, LOGIN, SIGNUP,
+  SeparatorSelectionView, SeparatorConfigurationView, SourceSeparationView
+} from './views';
 import { useApi, useDest, useError, useLoading } from './contexts';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { appConfigState } from './recoil/state/app-config';
@@ -11,6 +15,7 @@ import { ProtectedRoute, ProtectedRouteProps } from './components';
 import { environmentState, LoginPopupBehavior, LOGIN_REDIRECT, POPUP, ProtectedRouteBehavior } from './recoil/state/environment';
 import { EnvironmentError, loadEnvironmentValue } from './utils';
 import { loggedInState } from './recoil/state/login';
+import { SchemaArgs, SeparatorConfig } from './api';
 
 const { Text } = Typography;
 const { Content, Footer } = Layout;
@@ -128,27 +133,45 @@ export const App = () => {
       history.push("/");
     }
   };
+  const startSeparate = async (separator: SeparatorConfig, file: Blob, fileName: string, args: SchemaArgs) => {
+    try {
+        const { data } = await api!.uploadSeparate(separator, file, fileName, args);
+        const { id } = data;
+        console.log(id);
+        history.push(`/separate/${id}`);
+    } catch {}
+  };
+
   const isPageLogin = location.pathname === "/signup" || location.pathname === "/login";
   return (
     <Layout className="layout">
       {!isPageLogin && <Header onLogout={handleLogout}/>}
-      <Content>
+      <Content style={{ position: "relative" }}>
         {appStateLoading ? (
           <div style={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
-            <Spin/>
+            <Spin />
           </div>
         ) : (
           <Switch>
             <Route exact path="/" render={() => (
-              <SourceSeparationView setActiveSeparator={(key) => history.push("/" + key)}/>
+              <SeparatorSelectionView
+                setActiveSeparator={(key) => history.push("/" + key)}
+                startSeparate={startSeparate}
+              />
             )}/>
             {
               appConfig!.separator_config.map((separator) => (
                 <Route exact key={separator.key} path={`/${separator.key}`} render={(props) => (
-                  <SourceSeparationView activeSeparatorKey={separator.key}/>
+                  <SeparatorConfigurationView
+                    activeSeparatorKey={separator.key}
+                    startSeparate={startSeparate}
+                  />
                 )}/>
               ))
             }
+            <Route exact path="/separate/:separation_id" render={(props) => (
+              <SourceSeparationView separationId={props.match.params.separation_id}/>
+            )}/>
             <Route exact path="/login" render={(props) => (
               <LoginView type={LOGIN} typeChanged={() => history.push({
                 pathname: "/signup",
